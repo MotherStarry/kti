@@ -219,8 +219,14 @@ fn get_correct_extension(path: &Path) -> Result<Option<String>, Box<dyn Error>> 
         }
         [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, ..] => Some("png"),
         [0x25, 0x50, 0x44, 0x46, 0x2D, ..] => Some("pdf"),
-        [0x4F, 0x67, 0x67, 0x53, ..] => Some("ogg"),
-        [0x1A, 0x45, 0xDF, 0xA3, ..] => Some("mkv"),
+        [0x4F, 0x67, 0x67, 0x53, ..] => {
+            drop(file);
+            detect_opus_or_ogg(path)?
+        }
+        [0x1A, 0x45, 0xDF, 0xA3, ..] => {
+            drop(file);
+            detect_webm_or_mkv(path)?
+        }
         [0x66, 0x4C, 0x61, 0x43, ..] => Some("flac"),
         [0xFF, 0xD8, 0xFF, ..] => Some("jpg"),
         buf if buf.len() >= 12 && &buf[0..4] == b"RIFF" => match &buf[8..12] {
@@ -239,6 +245,58 @@ fn get_correct_extension(path: &Path) -> Result<Option<String>, Box<dyn Error>> 
     };
     let extension = extension.map(|ext| ext.to_string());
     Ok(extension)
+}
+
+fn detect_opus_or_ogg(path: &Path) -> Result<Option<&str>, Box<dyn Error>> {
+    let mut file = fs::File::open(path)?;
+    let mut buffer = [0; 1024];
+    let bytes_read = file.read(&mut buffer)?;
+
+    if find_bytes_in_buffer(&buffer[0..bytes_read], b"OpusHead") {
+        Ok(Some("opus"))
+    } else {
+        Ok(Some("ogg"))
+    }
+}
+
+fn detect_webm_or_mkv(path: &Path) -> Result<Option<&str>, Box<dyn Error>> {
+    let mut file = fs::File::open(path)?;
+    let mut buffer = [0; 1024];
+    let bytes_read = file.read(&mut buffer)?;
+
+    if contains_webm_codecs(&buffer[0..bytes_read]) {
+        Ok(Some("webm"))
+    } else {
+        Ok(Some("mkv"))
+    }
+}
+
+fn contains_webm_codecs(buffer: &[u8]) -> bool {
+    if find_bytes_in_buffer(buffer, b"V_VP8")
+        || find_bytes_in_buffer(buffer, b"V_VP9")
+        || find_bytes_in_buffer(buffer, b"V_AV01")
+        || find_bytes_in_buffer(buffer, b"A_VORBIS")
+        || find_bytes_in_buffer(buffer, b"A_OPUS")
+    {
+        return true;
+    }
+    if find_bytes_in_buffer(buffer, b"V_MPEG4")
+        || find_bytes_in_buffer(buffer, b"V_MPEG2")
+        || find_bytes_in_buffer(buffer, b"A_AC3")
+        || find_bytes_in_buffer(buffer, b"A_DTS")
+        || find_bytes_in_buffer(buffer, b"A_AAC")
+        || find_bytes_in_buffer(buffer, b"A_MP3")
+    {
+        return false;
+    }
+
+    false
+}
+
+fn find_bytes_in_buffer(buffer: &[u8], pattern: &[u8]) -> bool {
+    buffer
+        .windows(pattern.len())
+        .any(|window| window == pattern)
 }
 
 fn filter_entries(entry: &DirEntry, options: &Kti) -> bool {
