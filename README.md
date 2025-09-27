@@ -4,6 +4,24 @@ A simple CLI tool to correct file extensions to match their file signatures.
 ### What kti does:
 kti scans recursively through directories and finds files that have file extensions that do not match their file signature.
 
+Kti fully supports the following file extensions:
+- flac
+- gif
+- jpg
+- mkv
+- mp3
+- ogg
+- pdf
+- png
+- wav
+- webp
+
+These 3 may not be always recognized:
+- mp4
+- opus (falls back to ogg)
+- webm (falls back to mkv)
+
+
 ### How to install kti:
 You first need a working installation of the Rust compiler. Simply visit [rustup](https://rustup.rs) and follow the steps for the operating system you are using.
 After you are done and have a working version of rust, you can run this command:
