@@ -1,4 +1,5 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::Shell;
 use owo_colors::OwoColorize;
 use std::error::Error;
 use std::fs;
@@ -50,10 +51,26 @@ struct Kti {
 
     #[arg(short = 'c', long = "color", help = "Adds colors to the output.")]
     colored: bool,
+
+    #[arg(
+        long = "generate-completions",
+        value_enum,
+        help = "Generate shell completions"
+    )]
+    generate_completions: Option<Shell>,
 }
 
 fn main() {
     let kti = Kti::parse();
+
+    if let Some(shell) = kti.generate_completions {
+        let mut cmd = Kti::command();
+        let name = cmd.get_name().to_string();
+        eprintln!("Generating completion file for {shell}");
+        clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+        return;
+    }
+
     let root_path = kti.path.clone().unwrap_or(PathBuf::from("."));
 
     if let Ok(exists) = fs::exists(&root_path) {

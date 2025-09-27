@@ -33,6 +33,12 @@ Do make sure to add `.cargo/bin` to your path.
 ### Usage:
 I strongly recommend you first read through the couple options kti has available, to do so just type ``kti -h`` or ``kti --help`` in your terminal.
 
+You can generate completions for your shell by using the --generate-completions option and adding the shell you wish to generate completions for piped to the path used by your shell for completions. Fish shell for example:
+```fish
+kti --generate-completions fish > ~/.config/fish/completions/kti.fish
+```
+
+
 **Important**: By default kti will change all file extensions for the files that do not match with what kti has found. I advise you first run kti with the --dry-run option and verifying the changes kti plans to make before running kti without it. Example:
 ```fish
 kti -d --dry-run
